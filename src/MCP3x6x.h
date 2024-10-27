@@ -108,13 +108,13 @@ class MCP3x6x {
   typedef union {
     struct {
       struct __attribute__((__packed__)) {
-        bool por;     //!< status: power on reset
-        bool crccfg;  //!< status: crc
-        bool dr;      //!< status: data ready
+        bool por     : 1;  //!< status: power on reset (bit 0)
+        bool crccfg  : 1;  //!< status: CRC configuration (bit 1)
+        bool dr      : 1;  //!< status: data ready (bit 2)
+        uint8_t      : 1;  //!< unused bit (bit 3)
+        uint8_t addr : 2;  //!< address field (bits 5:4)
+        uint8_t      : 2;  //!< remaining unused bits (bits 7:6)
       };
-      uint8_t      : 1;  //!< !addr[0]
-      uint8_t addr : 2;  //!< addresse
-      uint8_t      : 2;  //!< EMTPY
     };
     uint8_t raw;
   } status_t;
@@ -297,7 +297,7 @@ class MCP3x6x {
    * @brief Delay Time Between Each Conversion During a Scan Cycle
    *
    */
-  enum class __attribute__((packed)) delay : uint8_t {
+  enum class __attribute__((packed)) DelaySetting : uint8_t {
     DLY_512 = 7,  //!< 512 * DMCLK
     DLY_256 = 6,  //!< 256 * DMCLK
     DLY_128 = 5,  //!< 128 * DMCLK
@@ -313,9 +313,10 @@ class MCP3x6x {
    *
    */
   struct Adcdata {
-    uint8_t channelid : 4;   //!< channel ID
-    int32_t value     : 25;  //!< actual value of conversion
-  } adcdata;                 //!< todo
+    uint8_t channelid : 4;   //!< channel ID (bits 31:28)
+    uint8_t sign      : 4;   //!< sign (bits 27:24)
+    int32_t value     : 24;  //!< actual value of conversion (bits 23:0)
+  } adcdata;
 
   /**
    * @brief configuration register 0
@@ -414,7 +415,7 @@ class MCP3x6x {
      *
      * @param data
      */
-    Mux(uint8_t data) : raw(data){};
+    Mux(uint8_t data) : raw(data) {};
     struct {
       enum mux vin_minus : 4;  //!< MUX_VIN- Input Selection
       enum mux vin_plus  : 4;  //!< MUX_VIN+ Input Selection
@@ -441,9 +442,9 @@ class MCP3x6x {
         };
         uint16_t raw;  //!< raw access to register
       } channel;
-      uint8_t        : 4;  //!< unimplemented: read as ‘0’
-      bool           : 1;  //!< reserved: should be set to ‘0‘
-      enum delay dly : 3;  //!< delay time between each conversion during a scan cycle
+      uint8_t               : 4;  //!< unimplemented: read as ‘0’
+      bool                  : 1;  //!< reserved: should be set to ‘0‘
+      enum DelaySetting dly : 3;  //!< delay time between each conversion during a scan cycle
     };
     uint8_t raw[3];  //!< raw access to register
   } scan_t;
@@ -518,7 +519,7 @@ class MCP3x6x {
     lock_t lock;            //!< register setting
     uint16_t id;            //!< register setting
     crccfg_t crccfg;        //!< register setting
-    Settings() : mux(0x01){};
+    Settings() : mux(0x01) {};
   } settings;  //!< todo
 
   /**
@@ -1110,7 +1111,7 @@ class MCP3461 : public MCP3x6x {
    */
   MCP3461(const uint8_t pinCS = SS, SPIClass *theSPI = &SPI, const uint8_t pinMOSI = MOSI,
           const uint8_t pinMISO = MISO, const uint8_t pinCLK = SCK)
-      : MCP3x6x(MCP3461_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK){};
+      : MCP3x6x(MCP3461_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK) {};
   /**
    * @brief Construct a new MCP3461 object
    *
@@ -1125,7 +1126,7 @@ class MCP3461 : public MCP3x6x {
   MCP3461(const uint8_t pinIRQ, const uint8_t pinMCLK, const uint8_t pinCS = SS,
           SPIClass *theSPI = &SPI, const uint8_t pinMOSI = MOSI, const uint8_t pinMISO = MISO,
           const uint8_t pinCLK = SCK)
-      : MCP3x6x(pinIRQ, pinMCLK, MCP3461_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK){};
+      : MCP3x6x(pinIRQ, pinMCLK, MCP3461_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK) {};
 };
 
 /**
@@ -1145,7 +1146,7 @@ class MCP3462 : public MCP3x6x {
    */
   MCP3462(const uint8_t pinCS = SS, SPIClass *theSPI = &SPI, const uint8_t pinMOSI = MOSI,
           const uint8_t pinMISO = MISO, const uint8_t pinCLK = SCK)
-      : MCP3x6x(MCP3462_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK){};
+      : MCP3x6x(MCP3462_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK) {};
   /**
    * @brief Construct a new MCP3462 object
    *
@@ -1160,7 +1161,7 @@ class MCP3462 : public MCP3x6x {
   MCP3462(const uint8_t pinIRQ, const uint8_t pinMCLK, const uint8_t pinCS = SS,
           SPIClass *theSPI = &SPI, const uint8_t pinMOSI = MOSI, const uint8_t pinMISO = MISO,
           const uint8_t pinCLK = SCK)
-      : MCP3x6x(pinIRQ, pinMCLK, MCP3462_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK){};
+      : MCP3x6x(pinIRQ, pinMCLK, MCP3462_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK) {};
 };
 
 /**
@@ -1180,7 +1181,7 @@ class MCP3464 : public MCP3x6x {
    */
   MCP3464(const uint8_t pinCS = SS, SPIClass *theSPI = &SPI, const uint8_t pinMOSI = MOSI,
           const uint8_t pinMISO = MISO, const uint8_t pinCLK = SCK)
-      : MCP3x6x(MCP3464_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK){};
+      : MCP3x6x(MCP3464_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK) {};
   /**
    * @brief Construct a new MCP3464 object
    *
@@ -1195,7 +1196,7 @@ class MCP3464 : public MCP3x6x {
   MCP3464(const uint8_t pinIRQ, const uint8_t pinMCLK, const uint8_t pinCS = SS,
           SPIClass *theSPI = &SPI, const uint8_t pinMOSI = MOSI, const uint8_t pinMISO = MISO,
           const uint8_t pinCLK = SCK)
-      : MCP3x6x(pinIRQ, pinMCLK, MCP3464_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK){};
+      : MCP3x6x(pinIRQ, pinMCLK, MCP3464_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK) {};
 };
 
 /**
@@ -1215,7 +1216,7 @@ class MCP3561 : public MCP3x6x {
    */
   MCP3561(const uint8_t pinCS = SS, SPIClass *theSPI = &SPI, const uint8_t pinMOSI = MOSI,
           const uint8_t pinMISO = MISO, const uint8_t pinCLK = SCK)
-      : MCP3x6x(MCP3561_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK){};
+      : MCP3x6x(MCP3561_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK) {};
   /**
    * @brief Construct a new MCP3561 object
    *
@@ -1230,7 +1231,7 @@ class MCP3561 : public MCP3x6x {
   MCP3561(const uint8_t pinIRQ, const uint8_t pinMCLK, const uint8_t pinCS = SS,
           SPIClass *theSPI = &SPI, const uint8_t pinMOSI = MOSI, const uint8_t pinMISO = MISO,
           const uint8_t pinCLK = SCK)
-      : MCP3x6x(pinIRQ, pinMCLK, MCP3561_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK){};
+      : MCP3x6x(pinIRQ, pinMCLK, MCP3561_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK) {};
 };
 
 /**
@@ -1250,7 +1251,7 @@ class MCP3562 : public MCP3x6x {
    */
   MCP3562(const uint8_t pinCS = SS, SPIClass *theSPI = &SPI, const uint8_t pinMOSI = MOSI,
           const uint8_t pinMISO = MISO, const uint8_t pinCLK = SCK)
-      : MCP3x6x(MCP3562_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK){};
+      : MCP3x6x(MCP3562_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK) {};
   /**
    * @brief Construct a new MCP3562 object
    *
@@ -1265,7 +1266,7 @@ class MCP3562 : public MCP3x6x {
   MCP3562(const uint8_t pinIRQ, const uint8_t pinMCLK, const uint8_t pinCS = SS,
           SPIClass *theSPI = &SPI, const uint8_t pinMOSI = MOSI, const uint8_t pinMISO = MISO,
           const uint8_t pinCLK = SCK)
-      : MCP3x6x(pinIRQ, pinMCLK, MCP3562_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK){};
+      : MCP3x6x(pinIRQ, pinMCLK, MCP3562_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK) {};
 };
 
 /**
@@ -1285,7 +1286,7 @@ class MCP3564 : public MCP3x6x {
    */
   MCP3564(const uint8_t pinCS = SS, SPIClass *theSPI = &SPI, const uint8_t pinMOSI = MOSI,
           const uint8_t pinMISO = MISO, const uint8_t pinCLK = SCK)
-      : MCP3x6x(MCP3564_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK){};
+      : MCP3x6x(MCP3564_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK) {};
   /**
    * @brief Construct a new MCP3564 object
    *
@@ -1300,7 +1301,7 @@ class MCP3564 : public MCP3x6x {
   MCP3564(const uint8_t pinIRQ, const uint8_t pinMCLK, const uint8_t pinCS = SS,
           SPIClass *theSPI = &SPI, const uint8_t pinMOSI = MOSI, const uint8_t pinMISO = MISO,
           const uint8_t pinCLK = SCK)
-      : MCP3x6x(pinIRQ, pinMCLK, MCP3564_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK){};
+      : MCP3x6x(pinIRQ, pinMCLK, MCP3564_DEVICE_TYPE, pinCS, theSPI, pinMOSI, pinMISO, pinCLK) {};
 };
 
 /**
@@ -1308,5 +1309,7 @@ class MCP3564 : public MCP3x6x {
  *
  */
 extern void mcp_wrapper();
+
+void printBinary(byte inByte);
 
 #endif  // MCP3x6x_H

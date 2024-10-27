@@ -15,6 +15,29 @@
 
 #include <wiring_private.h>
 
+void printBinary(byte inByte) {
+  for (int b = 7; b >= 0; b--) {
+    Serial.print(bitRead(inByte, b));
+  }
+}
+
+void printCommandByte(byte inByte) {
+  Serial.print("Command: addr: ");
+  Serial.print(bitRead(inByte, 7));
+  Serial.print(bitRead(inByte, 6));
+
+  Serial.print(" cmd: ");
+  Serial.print(bitRead(inByte, 5));
+  Serial.print(bitRead(inByte, 4));
+  Serial.print(bitRead(inByte, 3));
+  Serial.print(bitRead(inByte, 2));
+
+  Serial.print(" type: ");
+  Serial.print(bitRead(inByte, 1));
+  Serial.print(bitRead(inByte, 0));
+  Serial.println();
+}
+
 MCP3x6x::MCP3x6x(const uint16_t MCP3x6x_DEVICE_TYPE, const uint8_t pinCS, SPIClass *theSPI,
                  const uint8_t pinMOSI, const uint8_t pinMISO, const uint8_t pinCLK) {
   switch (MCP3x6x_DEVICE_TYPE) {
@@ -79,13 +102,59 @@ void MCP3x6x::_reverse_array(uint8_t *array, size_t size) {
 
 MCP3x6x::status_t MCP3x6x::_transfer(uint8_t *data, uint8_t addr, size_t size) {
   _spi->beginTransaction(SPISettings(MCP3x6x_SPI_SPEED, MCP3x6x_SPI_ORDER, MCP3x6x_SPI_MODE));
-  noInterrupts();
+
+  // printCommandByte(addr);
+
+  // if (size) {
+  //   Serial.printf("Out: %d\n", size);
+  //   for (size_t i = 0; i < size; i++) {
+  //     Serial.printf("%d:  0x", i);
+  //     Serial.print(data[i], HEX);
+  //     Serial.print(" ");
+  //     printBinary(data[i]);
+  //     Serial.println();
+  //   }
+  // }
+
+  //  noInterrupts();
   digitalWrite(_pinCS, LOW);
   _status.raw = _spi->transfer(addr);
   _spi->transfer(data, size);
   digitalWrite(_pinCS, HIGH);
   interrupts();
   _spi->endTransaction();
+
+  // if (size) {
+  //   Serial.printf("In: %d\n", size);
+  //   for (size_t i = 0; i < size; i++) {
+  //     Serial.printf("%d:  0x", i);
+  //     Serial.print(data[i], HEX);
+  //     Serial.print(" ");
+  //     printBinary(data[i]);
+  //     Serial.println();
+  //   }
+  // }
+
+  // Serial.print("addr:");
+  // Serial.println(_status.addr);
+  // Serial.print("dr:");
+  // Serial.println(_status.dr);
+  // Serial.print("por:");
+  // Serial.println(_status.por);
+  // Serial.print("crc:");
+  // Serial.println(_status.crccfg);
+
+  // Serial.printf("Status: 0x", _status.raw);
+  // Serial.print(_status.raw, HEX);
+  // Serial.print(" ");
+  // printBinary(_status.raw);
+  // Serial.println();
+  // Serial.print("DR: ");
+  // Serial.print(_status.dr);
+  // Serial.println();
+
+  // Serial.println();
+
   return _status;
 }
 
@@ -93,7 +162,7 @@ bool MCP3x6x::begin(uint16_t channelmask, float vref) {
   pinMode(_pinCS, OUTPUT);
   digitalWrite(_pinCS, HIGH);
 
-  _spi->begin();
+  //_spi->begin();
 #if ARDUINO_ARCH_SAMD
   // todo figure out how to get dynamicaly sercom index
   pinPeripheral(_pinMISO, PIO_SERCOM);
@@ -107,11 +176,15 @@ bool MCP3x6x::begin(uint16_t channelmask, float vref) {
 
   // scanmode
   if (channelmask != 0) {
+    // Serial.println("scan");
     settings.scan.channel.raw = channelmask;  // todo apply _channel_mask
     _status                   = write(settings.scan);
   }
 
+  // Serial.println("vref");
   setReference(vref);
+
+  // Serial.println("standby");
   _status = standby();
 
   return true;
@@ -119,6 +192,8 @@ bool MCP3x6x::begin(uint16_t channelmask, float vref) {
 
 MCP3x6x::status_t MCP3x6x::read(Adcdata *data) {
   size_t s = 0;
+
+  // Serial.println("read");
 
   switch (_resolution_max) {
     case 16:
@@ -129,17 +204,23 @@ MCP3x6x::status_t MCP3x6x::read(Adcdata *data) {
       break;
   }
 
-  uint8_t buffer[s];
+  uint8_t buffer[s] = {0};
+  // _status           = _transfer(buffer, MCP3x6x_CMD_IREAD | MCP3x6x_ADR_ADCDATA, s);
   _status = _transfer(buffer, MCP3x6x_CMD_SREAD | MCP3x6x_ADR_ADCDATA, s);
+
+  // Serial.print("buffer: 0x");
+  // Serial.print(buffer[3], HEX);
+  // Serial.print(buffer[2], HEX);
+  // Serial.print(buffer[1], HEX);
+  // Serial.println(buffer[0], HEX);
+
   _reverse_array(buffer, s);
 
-#if MCP3x6x_DEBUG
-  Serial.print("buffer: 0x");
-  Serial.print(buffer[3], HEX);
-  Serial.print(buffer[2], HEX);
-  Serial.print(buffer[1], HEX);
-  Serial.println(buffer[0], HEX);
-#endif
+  // Serial.print("after buffer: 0x");
+  // Serial.print(buffer[3], HEX);
+  // Serial.print(buffer[2], HEX);
+  // Serial.print(buffer[1], HEX);
+  // Serial.println(buffer[0], HEX);
 
   data->channelid = _getChannel((uint32_t &)buffer);
   data->value     = _getValue((uint32_t &)buffer);
@@ -148,6 +229,7 @@ MCP3x6x::status_t MCP3x6x::read(Adcdata *data) {
 }
 
 void MCP3x6x::IRQ_handler() {
+  // Serial.println("irq handler");
   while (!_status.dr) {
     _status = read(&adcdata);
   }
@@ -172,6 +254,7 @@ void MCP3x6x::unlock() {
 }
 
 void MCP3x6x::setDataFormat(data_format format) {
+  // Serial.println("setDataFormat");
   settings.config3.data_format = format;
   _status                      = write(settings.config3);
 
@@ -204,6 +287,7 @@ void MCP3x6x::setAdcMode(adc_mode mode) {
 }
 
 void MCP3x6x::setClockSelection(clk_sel clk) {
+  // Serial.println("set clock selection");
   settings.config0.clk = clk;
   _status              = write(settings.config0);
 }
@@ -212,11 +296,6 @@ void MCP3x6x::enableScanChannel(mux_t ch) {
   for (size_t i = 0; i < sizeof(_channelID); i++) {
     if (_channelID[i] == ch.raw) {
       bitSet(settings.scan.channel.raw, i);
-#ifdef MCP3x6x_DEBUG
-      Serial.println(i);
-      Serial.println(ch.raw, HEX);
-      Serial.println(settings.scan.channel.raw, HEX);
-#endif
       break;
     }
   }
@@ -295,18 +374,36 @@ uint8_t MCP3x6x::_getChannel(uint32_t raw) {
 }
 
 int32_t MCP3x6x::analogRead(mux_t ch) {
+  // Serial.println("analogRead");
   // MuxMode
   if (settings.scan.channel.raw == 0) {
-#ifdef MCP3x6x_DEBUG
-    Serial.println("mux");
-#endif
+    // Serial.println("mux");
     settings.mux = ch;
     _status      = write(settings.mux);
     _status      = conversion();
-    while (!_status.dr) {
-      _status = read(&adcdata);
+
+    // poll our irq to find our data
+    int count = 0;
+    while (_status.dr && count < 50) {
+      if (!_status.dr) break;
+      // Serial.println("irq");
+      _status = read(settings.irq);
+      delay(10);
+      count++;
     }
-    return result.raw[(uint8_t)adcdata.channelid] = adcdata.value;
+
+    // get the actual data
+    _status                                = read(&adcdata);
+    result.raw[(uint8_t)adcdata.channelid] = adcdata.value;
+
+    // Serial.print("ch: ");
+    // printBinary(adcdata.channelid);
+    // Serial.println();
+
+    // Serial.print("data:");
+    // Serial.println(adcdata.value);
+
+    return result.ch[(uint8_t)adcdata.channelid];
   }
 
 #ifdef MCP3x6x_DEBUG
