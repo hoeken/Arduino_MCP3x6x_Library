@@ -194,7 +194,7 @@ void MCP3x6x::printConfig() {
   printBinary(settings.scan.raw[2]);
   Serial.print(" ");
   printBinary(settings.scan.raw[1]);
-  Serial.println();
+  Serial.print(" ");
   printBinary(settings.scan.raw[0]);
   Serial.println();
 
