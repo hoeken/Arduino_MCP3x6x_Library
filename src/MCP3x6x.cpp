@@ -158,6 +158,80 @@ MCP3x6x::status_t MCP3x6x::_transfer(uint8_t *data, uint8_t addr, size_t size) {
   return _status;
 }
 
+void MCP3x6x::printConfig() {
+  Serial.print("0x1 - config0: ");
+  read(settings.config0);
+  printBinary(settings.config0.raw);
+  Serial.println();
+
+  Serial.print("0x2 - config1: ");
+  read(settings.config1);
+  printBinary(settings.config1.raw);
+  Serial.println();
+
+  Serial.print("0x3 - config2: ");
+  read(settings.config2);
+  printBinary(settings.config2.raw);
+  Serial.println();
+
+  Serial.print("0x4 - config3: ");
+  read(settings.config3);
+  printBinary(settings.config3.raw);
+  Serial.println();
+
+  Serial.print("0x5 - irq: ");
+  read(settings.irq);
+  printBinary(settings.irq.raw);
+  Serial.println();
+
+  Serial.print("0x6 - mux: ");
+  read(settings.mux);
+  printBinary(settings.mux.raw);
+  Serial.println();
+
+  Serial.print("0x7 - scan: ");
+  read(settings.scan);
+  printBinary(settings.scan.raw[2]);
+  Serial.print(" ");
+  printBinary(settings.scan.raw[1]);
+  Serial.println();
+  printBinary(settings.scan.raw[0]);
+  Serial.println();
+
+  Serial.print("0x8 - timer: ");
+  read(settings.timer);
+  printBinary(settings.timer.raw[2]);
+  Serial.print(" ");
+  printBinary(settings.timer.raw[1]);
+  Serial.print(" ");
+  printBinary(settings.timer.raw[0]);
+  Serial.println();
+
+  Serial.print("0x9 - offsetcal: ");
+  read(settings.offsetcal);
+  printBinary(settings.offsetcal.raw[2]);
+  Serial.print(" ");
+  printBinary(settings.offsetcal.raw[1]);
+  Serial.print(" ");
+  printBinary(settings.offsetcal.raw[0]);
+  Serial.println();
+
+  Serial.print("0xA - gaincal: ");
+  read(settings.gaincal);
+  printBinary(settings.gaincal.raw[2]);
+  Serial.print(" ");
+  printBinary(settings.gaincal.raw[1]);
+  Serial.print(" ");
+  printBinary(settings.gaincal.raw[0]);
+  Serial.println();
+
+  Serial.print("Reference: ");
+  Serial.println(getReference());
+
+  Serial.print("Max Value: ");
+  Serial.println(getMaxValue());
+}
+
 bool MCP3x6x::begin(uint16_t channelmask, float vref) {
   pinMode(_pinCS, OUTPUT);
   digitalWrite(_pinCS, HIGH);
@@ -407,7 +481,7 @@ int32_t MCP3x6x::analogRead(mux_t ch) {
   }
 
 #ifdef MCP3x6x_DEBUG
-  Serial.println("scan");
+  // Serial.println("scan");
 #endif
   // ScanMode
   for (size_t i = 0; i < sizeof(_channelID); i++) {

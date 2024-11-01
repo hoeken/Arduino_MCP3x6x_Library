@@ -391,7 +391,7 @@ class MCP3x6x {
    * href=https://ww1.microchip.com/downloads/aemDocuments/documents/APID/ProductDocuments/DataSheets/MCP3461-2-4R-Family-Data-Sheet-DS20006404C.pdf#G1.1269747>MCP346x.pdf</a>
    */
   typedef union Irq {
-    struct {
+    struct __attribute__((packed)) {
       bool en_stp        : 1;  //!< Enable Conversion Start Interrupt Output
       bool en_fastcmd    : 1;  //!< Enable Fast Commands in the COMMAND Byte
       uint8_t irq_mode   : 2;  //!< Configuration for the IRQ/MDAT Pin
@@ -573,6 +573,8 @@ class MCP3x6x {
    *
    */
   ~MCP3x6x() { end(); };
+
+  void printConfig();
 
   /**
    * @brief begin communication
