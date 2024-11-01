@@ -458,13 +458,14 @@ int32_t MCP3x6x::analogRead(mux_t ch) {
 
     // poll our irq to find our data
     int count = 0;
-    while (_status.dr && count < 50) {
+    while (_status.dr && count < 20) {
       if (!_status.dr) break;
       // Serial.println("irq");
       _status = read(settings.irq);
-      delay(10);
+      delay(1);
       count++;
     }
+    if (count == 20) Serial.println("MCP3564 ADC read timed out");
 
     // get the actual data
     _status                                = read(&adcdata);
